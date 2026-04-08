@@ -4,7 +4,7 @@ import { type DatabaseManagerInstance, LoggerService, CreateDatabaseManager } fr
 import { type Band, type RuleConfig, type RuleRequest, type RuleResult } from '@tazama-lf/frms-coe-lib/lib/interfaces';
 import { CreateStorageManager } from '@tazama-lf/frms-coe-lib/lib/services/dbManager';
 import { handleTransaction } from '../../src';
-import { RuleExecutorConfig } from '../../src/rule';
+import { RuleExecutorConfig } from '../../src/rule-901';
 
 jest.mock('@tazama-lf/frms-coe-lib', () => {
   const original = jest.requireActual('@tazama-lf/frms-coe-lib');
@@ -33,7 +33,7 @@ const getMockRequest = (): RuleRequest => {
     ),
 
     DataCache: {
-      dbtrId: 'dbtr_516c7065d75b4fcea6fffb52a9539367',
+      dbtrId: 'dbtr_516c7065d75b4fcea6fffb52a9539357',
       cdtrId: 'cdtr_b086a1e193794192b32c8af8550d721d',
       dbtrAcctId: 'dbtrAcct_1fd08e408c184dd28cbaeef03bff1af5',
       cdtrAcctId: 'cdtrAcct_d531e1ba4ed84a248fe26617e79fcb64',
@@ -256,6 +256,19 @@ describe('Error conditions', () => {
       await handleTransaction(req, determineOutcome, ruleRes, loggerService, ruleConfig, databaseManager);
     } catch (error) {
       expect((error as Error).message).toBe('Data error: query result type mismatch - expected a number');
+    }
+  });
+
+  test('Invalid query result', async () => {
+    // Mocking the request of getting oldes transation timestamp
+    const mockQueryFn = jest.fn();
+    databaseManager._eventHistory.query = mockQueryFn.mockResolvedValue({ rows: [{ length: undefined }]})
+    jest.spyOn(databaseManager._eventHistory, 'query');
+
+    try {
+      await handleTransaction(req, determineOutcome, ruleRes, loggerService, ruleConfig, databaseManager);
+    } catch (error) {
+      expect((error as Error).message).toBe('Data error: irretrievable transaction history');
     }
   });
 
